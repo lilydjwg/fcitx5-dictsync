@@ -1,5 +1,6 @@
 use std::collections::HashSet;
-use std::io::{Result, stdout, Write};
+use std::io::{Result, Write, BufWriter};
+use std::fs::File;
 
 use clap::Parser;
 
@@ -17,6 +18,10 @@ struct Args {
   b_main: String,
   #[arg()]
   b_user: String,
+  #[arg()]
+  a_script: String,
+  #[arg()]
+  b_script: String,
 }
 
 fn main() -> Result<()> {
@@ -24,25 +29,28 @@ fn main() -> Result<()> {
   let a = Dict::load_dict(&args.a_main, &args.a_user)?;
   let b = Dict::load_dict(&args.b_main, &args.b_user)?;
   let r = compare_dict(&a, &b);
-  let mut stdout = stdout().lock();
 
-  writeln!(stdout, "[a_add]")?;
-  for w in r.a_add {
-    writeln!(stdout, "{}", w)?;
-  }
-  writeln!(stdout, "[a_delete]")?;
-  for w in r.a_delete {
-    writeln!(stdout, "{}", w)?;
-  }
-  writeln!(stdout, "[b_add]")?;
-  for w in r.b_add {
-    writeln!(stdout, "{}", w)?;
-  }
-  writeln!(stdout, "[b_delete]")?;
-  for w in r.b_delete {
-    writeln!(stdout, "{}", w)?;
-  }
+  write_result(&args.a_script, &r.a_add, &r.a_delete)?;
+  write_result(&args.b_script, &r.b_add, &r.b_delete)?;
+  Ok(())
+}
 
+fn write_result(
+  path: &str,
+  to_add: &HashSet<Word>,
+  to_del: &HashSet<Word>,
+) -> Result<()> {
+  let f = File::create(path)?;
+  let mut f = BufWriter::new(f);
+  for w in to_add {
+    writeln!(f, "insert {} {}", w.code, w.word)?;
+  }
+  for w in to_del {
+    writeln!(f, "delete {} {}", w.code, w.word)?;
+  }
+  if !to_add.is_empty() || !to_del.is_empty() {
+    writeln!(f, "save")?;
+  }
   Ok(())
 }
 
