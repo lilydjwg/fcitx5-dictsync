@@ -15,12 +15,19 @@ pub struct Dict {
 }
 
 impl Dict {
-  pub fn load_dict(main: &str, user: &str) -> Result<Dict> {
-    let main = load_main(main)?;
-    let (user_new, user_deleted) = load_user(user)?;
+  pub fn load_dict(main_path: &str) -> Result<Dict> {
+    let main = load_main(main_path)?;
+    let user_path = main_path.replace(".main.", ".user.");
+    let (user_new, user_deleted) = load_user(&user_path)?;
     Ok(Dict {
       main, user_new, user_deleted,
     })
+  }
+
+  pub fn all_words(&self) -> HashSet<Word> {
+    let mut all: HashSet<_> = self.user_new.union(&self.main).cloned().collect();
+    all.retain(|w| !self.user_deleted.contains(w));
+    all
   }
 }
 
